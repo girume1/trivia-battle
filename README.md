@@ -20,7 +20,8 @@ Real-time multiplayer trivia game built on Linera microchains for the Linera Bui
 3. In `frontend/`: `flutter pub get && flutter run -d chrome --web-port=8081`
 
 ## Live Demo
-(Add Conway Testnet link here after deployment)
+Frontend: https://trivia-battle.vercel.app  
+(Backend GraphQL is local for now — for buildathon demo, deploy to Conway Testnet)
 
 ## Buildathon Submission
 Wave: [5]  
