@@ -1,0 +1,8 @@
+[workspace]
+members = ["abi"]
+resolver = "2"
+
+[workspace.dependencies]
+linera-sdk = "0.15.5"  
+serde = { version = "1.0", features = ["derive"] }
+async-graphql = "7.0.0"
