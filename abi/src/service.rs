@@ -11,6 +11,12 @@ struct StateView {
     answers_count: usize,
 }
 
+#[derive(SimpleObject)]
+struct PlayerInfo {
+    balance: u64,
+    score: u32,
+}
+
 pub struct TriviaService {
     runtime: ServiceRuntime<super::contract::TriviaContract>,
 }
@@ -26,6 +32,33 @@ impl TriviaService {
             current_question: state.current_question.as_ref().map(|q| q.text.clone()),
             answers_count: state.answers.len(),
         }
+    }
+
+    async fn player_balance(&self) -> u64 {
+        let state = self.runtime.application_state();
+        let owner = self.runtime.application_owner();
+        state.players
+            .iter()
+            .find(|p| p.owner == owner)
+            .map(|p| p.balance)
+            .unwrap_or(0)
+    }
+
+    async fn player_score(&self) -> u32 {
+        let state = self.runtime.application_state();
+        let owner = self.runtime.application_owner();
+        state.players
+            .iter()
+            .find(|p| p.owner == owner)
+            .map(|p| p.score)
+            .unwrap_or(0)
+    }
+
+    async fn total_pot(&self) -> u64 {
+        let state = self.runtime.application_state();
+        // Simple MVP: sum of all player bets (assuming bet is stored or fixed)
+        // In full version, track a pot field in GameState
+        state.players.iter().map(|p| p.balance).sum::<u64>() // Placeholder: replace with real pot
     }
 }
 
