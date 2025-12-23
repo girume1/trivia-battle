@@ -9,8 +9,9 @@ use crate::{GameState, Player, Question};
 pub enum Operation {
     CreateRoom { room_id: String },
     JoinRoom { room_id: String },
-    StartRound,
+    StartRoundWithBet { bet_amount: u64 },  // New: Deduct bet and start round
     SubmitAnswer { answer_index: usize },
+    EndRound,  // New: Resolve answers, pay winners, end round
 }
 
 #[derive(Serialize, Deserialize)]
@@ -72,17 +73,31 @@ impl Contract for TriviaContract {
                 }
                 self.state.players.push(Player {
                     owner,
-                    balance: 1000, // Starting balance for future betting
+                    balance: 1000, // Starting balance for betting
                     score: 0,
                 });
                 Ok(())
             }
 
-            Operation::StartRound => {
+            Operation::StartRoundWithBet { bet_amount } => {
                 if self.state.round_active {
                     return Err("Round already active".to_string());
                 }
-                // MVP: Fixed question (later: random or oracle)
+                if bet_amount == 0 {
+                    return Err("Bet amount must be greater than 0".to_string());
+                }
+
+                let owner = self.runtime.application_owner();
+                let player_index = self.state.players.iter().position(|p| p.owner == owner)
+                    .ok_or("Player not in room".to_string())?;
+
+                // Deduct bet from player balance (simulate bankroll transfer)
+                if self.state.players[player_index].balance < bet_amount {
+                    return Err("Insufficient balance for bet".to_string());
+                }
+                self.state.players[player_index].balance -= bet_amount;
+
+                // Start the round with fixed question (replace with random later)
                 let question = Question {
                     text: "What is the capital of France?".to_string(),
                     options: vec![
@@ -114,6 +129,37 @@ impl Contract for TriviaContract {
                     let chain_id = self.runtime.chain_id();
                     self.state.answers.push((chain_id, answer_index));
                 }
+                Ok(())
+            }
+
+            Operation::EndRound => {
+                if !self.state.round_active {
+                    return Err("No active round to end".to_string());
+                }
+
+                if let Some(question) = &self.state.current_question {
+                    let correct_index = question.correct_index;
+
+                    // Resolve answers and pay winners
+                    for (chain_id, answer_index) in &self.state.answers {
+                        // Find player (simplified matching by chain_id)
+                        if let Some(player) = self.state.players.iter_mut().find(|p| {
+                            // Replace with proper chain_id matching in production
+                            true // MVP placeholder
+                        }) {
+                            if *answer_index == correct_index {
+                                // Payout: 2x bet (fixed 200 tokens for MVP)
+                                player.balance += 200;
+                                player.score += 1;
+                            }
+                        }
+                    }
+                }
+
+                // Clean up round
+                self.state.round_active = false;
+                self.state.current_question = None;
+                self.state.answers.clear();
                 Ok(())
             }
         }
