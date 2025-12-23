@@ -14,7 +14,7 @@ pub enum Operation {
 
 #[derive(Serialize, Deserialize)]
 pub enum Message {
-    // Future: cross-chain transfers
+    // Future: cross-chain transfers (can be used for multi-chain payouts)
 }
 
 pub struct BankrollContract {
@@ -42,8 +42,15 @@ impl Contract for BankrollContract {
     async fn initialize(&mut self, _parameters: (), call: Operation) -> Result<(), String> {
         match call {
             Operation::Mint { amount } => {
+                if amount == 0 {
+                    return Err("Mint amount must be greater than 0".to_string());
+                }
                 let owner = self.runtime.application_owner();
                 self.state.total_supply += amount;
+                // Check if account already exists (prevent double-mint)
+                if self.state.accounts.iter().any(|a| a.owner == owner) {
+                    return Err("Account already minted".to_string());
+                }
                 self.state.accounts.push(Account { owner, balance: amount });
                 Ok(())
             }
@@ -54,15 +61,19 @@ impl Contract for BankrollContract {
     async fn execute_operation(&mut self, operation: Operation) -> Result<(), String> {
         let owner = self.runtime.application_owner();
         let account_index = self.state.accounts.iter().position(|a| a.owner == owner)
-            .ok_or("Account not found".to_string())?;
+            .ok_or("Account not found. Mint first.".to_string())?;
 
         match operation {
             Operation::Transfer { to, amount } => {
+                if amount == 0 {
+                    return Err("Transfer amount must be greater than 0".to_string());
+                }
                 if amount > self.state.accounts[account_index].balance {
                     return Err("Insufficient balance".to_string());
                 }
                 self.state.accounts[account_index].balance -= amount;
 
+                // Transfer to recipient (create if not exists)
                 if let Some(recipient) = self.state.accounts.iter_mut().find(|a| a.owner == to) {
                     recipient.balance += amount;
                 } else {
@@ -72,7 +83,8 @@ impl Contract for BankrollContract {
             }
 
             Operation::CreditDailyBonus => {
-                self.state.accounts[account_index].balance += 100; // Simple daily bonus
+                // Optional: add a timestamp check later for real daily limit
+                self.state.accounts[account_index].balance += 100;
                 Ok(())
             }
 
@@ -81,6 +93,7 @@ impl Contract for BankrollContract {
     }
 
     async fn execute_message(&mut self, _message: Message) -> Result<(), String> {
+        // Can be used for cross-chain messages later
         Ok(())
     }
 }
