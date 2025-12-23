@@ -1,55 +1,43 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving this with a web server, you should check that
-    the server is configured to serve the files with the correct MIME types.
-    See https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
-    for more information.
-  -->
+  <base href="$FLUTTER_BASE_HREF">
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Real-time multiplayer trivia game on Linera microchains.">
 
-  <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="trivia_battle_frontend">
+  <meta name="apple-mobile-web-app-title" content="Trivia Battle">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
-  <link rel="apple-touch-icon" sizes="152x152" href="icons/Icon-152.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-180.png">
-  <link rel="apple-touch-icon" sizes="167x167" href="icons/Icon-167.png">
-  <link rel="icon" type="image/png" href="icons/Icon-192.png">
-  <link rel="icon" type="image/png" href="icons/Icon-512.png">
 
-  <title>trivia_battle_frontend</title>
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Trivia Battle ⚡️⛓️</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Fallback theme color for older browsers -->
-  <meta name="theme-color" content="#ffffff">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-  <!-- Primary meta tags -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-
-  <!-- Styles -->
-  <link rel="stylesheet" href="style.css">
-
-  <!-- This script adds a service worker to make the app installable -->
-  <script defer src="flutter.js" type="application/javascript"></script>
+  <style>
+    /* Loading Spinner Styling */
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
 </head>
-<body>
-  <!-- This script tag loads the Flutter app -->
-  <script>
-    window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        }
-      }).then(function(engineInitializer) {
-        return engineInitializer.autoStart();
-      });
-    });
-  </script>
+<body style="background-color: #121212;">
+  <div class="loading">
+    <img src="icons/Icon-192.png" width="64px" height="64px" />
+  </div>
+
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
