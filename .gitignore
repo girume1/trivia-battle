@@ -2,10 +2,27 @@
 target/
 Cargo.lock
 
+# Linera
+*.wasm
+*.wat
+
 # Flutter
-.flutter-plugins
-.flutter-plugins-dependencies
-build/
-*.g.dart
-*.freezed.dart
-*.mocks.dart
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/build/
+frontend/.pub-cache/
+frontend/pubspec.lock
+
+# Docker
+docker-compose.override.yml
+
+# IDE / Editor
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+*.log
