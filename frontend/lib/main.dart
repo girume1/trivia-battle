@@ -4,14 +4,14 @@ import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initHiveForFlutter(); // For cache
+  await initHiveForFlutter(); // For GraphQL cache
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final httpLink = HttpLink('http://localhost:9002/graphql'); // Your local backend
+    final httpLink = HttpLink('http://localhost:9002/graphql'); // Local backend
 
     final ValueNotifier<GraphQLClient> client = ValueNotifier(
       GraphQLClient(
@@ -23,11 +23,16 @@ class MyApp extends StatelessWidget {
     return Provider<ValueNotifier<GraphQLClient>>.value(
       value: client,
       child: MaterialApp(
-        title: 'Trivia Battle',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
+        title: 'Trivia Battle ⚡️',
+        theme: ThemeData.dark().copyWith(
+          primaryColor: Colors.blue[800],
           scaffoldBackgroundColor: Colors.grey[900],
-          textTheme: TextTheme(bodyMedium: TextStyle(color: Colors.white)),
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ),
         home: HomeScreen(),
       ),
@@ -42,7 +47,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final String roomId = "room1"; // Hardcoded for MVP
-  String status = "Welcome! Join the room to start.";
+  String status = "Welcome! Join the room to play.";
 
   // Mutations
   final String joinMutation = r'''
@@ -51,9 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   ''';
 
-  final String startMutation = r'''
-    mutation Start {
-      executeOperation(operation: { startRound: null })
+  final String startWithBetMutation = r'''
+    mutation StartWithBet($bet: Int!) {
+      executeOperation(operation: { startRoundWithBet: { betAmount: $bet } })
     }
   ''';
 
@@ -63,7 +68,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   ''';
 
-  // Query
+  final String endRoundMutation = r'''
+    mutation EndRound {
+      executeOperation(operation: { endRound: null })
+    }
+  ''';
+
+  // Queries
   final String stateQuery = r'''
     query GetState {
       state {
@@ -72,7 +83,10 @@ class _HomeScreenState extends State<HomeScreen> {
         roundActive
         currentQuestion
         answersCount
+        pot
       }
+      playerBalance
+      playerScore
     }
   ''';
 
@@ -81,21 +95,30 @@ class _HomeScreenState extends State<HomeScreen> {
     final client = Provider.of<ValueNotifier<GraphQLClient>>(context).value;
 
     return Scaffold(
-      appBar: AppBar(title: Text('Trivia Battle ⚡️'), backgroundColor: Colors.blue[900]),
+      appBar: AppBar(
+        title: Text('Trivia Battle ⚡️'),
+        backgroundColor: Colors.blue[900],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(status, style: TextStyle(fontSize: 18, color: Colors.white70)),
+            // Status Message
+            Card(
+              color: Colors.blueGrey[800],
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(status, style: TextStyle(fontSize: 18, color: Colors.white)),
+              ),
+            ),
             SizedBox(height: 20),
 
             // Join Room Button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: EdgeInsets.symmetric(vertical: 16),
-              ),
+            ElevatedButton.icon(
+              icon: Icon(Icons.login),
+              label: Text('Join Room "$roomId"'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               onPressed: () async {
                 final mutation = MutationOptions(
                   document: gql(joinMutation),
@@ -103,25 +126,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
                 final result = await client.mutate(mutation);
                 setState(() {
-                  if (result.hasException) {
-                    status = "Error: ${result.exception}";
-                  } else {
-                    status = "Joined room $roomId! Ready to play.";
-                  }
+                  status = result.hasException
+                      ? "Error: ${result.exception.toString()}"
+                      : "Joined room! Ready to play.";
                 });
               },
-              child: Text('Join Room "$roomId"', style: TextStyle(fontSize: 18)),
             ),
-
             SizedBox(height: 20),
 
-            // Real-time State (polls every 2s)
+            // Live State with Polling
             Query(
               options: QueryOptions(
                 document: gql(stateQuery),
                 pollInterval: Duration(seconds: 2),
               ),
-              builder: (result, {refetch, fetchMore}) {
+              builder: (result, {refetch}) {
                 if (result.hasException) {
                   return Text('Error: ${result.exception}', style: TextStyle(color: Colors.red));
                 }
@@ -129,96 +148,126 @@ class _HomeScreenState extends State<HomeScreen> {
                   return Center(child: CircularProgressIndicator());
                 }
 
-                final data = result.data?['state'];
+                final data = result.data;
                 if (data == null) return Text('No data yet');
 
-                final questionText = data['currentQuestion'] as String? ?? '';
-                final roundActive = data['roundActive'] as bool;
-                final players = data['playersCount'] as int;
-                final answers = data['answersCount'] as int;
+                final state = data['state'];
+                final question = state['currentQuestion'] as String? ?? '';
+                final roundActive = state['roundActive'] as bool;
+                final players = state['playersCount'] as int;
+                final answers = state['answersCount'] as int;
+                final pot = state['pot'] as int;
+                final balance = data['playerBalance'] as int;
+                final score = data['playerScore'] as int;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Players in room: $players', style: TextStyle(fontSize: 20, color: Colors.white)),
-                    SizedBox(height: 10),
-                    Text('Answers submitted: $answers', style: TextStyle(fontSize: 16, color: Colors.white70)),
-                    SizedBox(height: 20),
-
-                    if (questionText.isNotEmpty) ...[
-                      Container(
+                    // Player Info
+                    Card(
+                      color: Colors.blueGrey[700],
+                      child: Padding(
                         padding: EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.blueGrey[800],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          questionText,
-                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                          textAlign: TextAlign.center,
+                        child: Column(
+                          children: [
+                            Text('Players: $players', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                            Text('Your Balance: $balance tokens', style: TextStyle(fontSize: 16)),
+                            Text('Your Score: $score', style: TextStyle(fontSize: 16)),
+                            Text('Current Pot: $pot tokens', style: TextStyle(fontSize: 16)),
+                            Text('Answers: $answers / $players'),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 30),
+                    ),
+                    SizedBox(height: 20),
 
-                      // Answer Buttons (hardcoded for MVP question)
+                    // Question
+                    if (question.isNotEmpty)
+                      Card(
+                        elevation: 4,
+                        color: Colors.blue[900],
+                        child: Padding(
+                          padding: EdgeInsets.all(20),
+                          child: Text(
+                            question,
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    SizedBox(height: 30),
+
+                    // Answer Buttons
+                    if (question.isNotEmpty && roundActive)
                       ...['Berlin', 'Paris', 'Madrid', 'London'].asMap().entries.map((entry) {
                         int idx = entry.key;
-                        String option = entry.value;
+                        String opt = entry.value;
                         return Padding(
                           padding: EdgeInsets.symmetric(vertical: 8),
                           child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue[700],
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: roundActive
-                                ? () async {
-                                    final mutation = MutationOptions(
-                                      document: gql(submitMutation),
-                                      variables: {'index': idx},
-                                    );
-                                    final result = await client.mutate(mutation);
-                                    setState(() {
-                                      if (result.hasException) {
-                                        status = "Error: ${result.exception}";
-                                      } else {
-                                        status = "Answer submitted: $option";
-                                      }
-                                    });
-                                  }
-                                : null,
-                            child: Text(option, style: TextStyle(fontSize: 20)),
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue[700]),
+                            onPressed: () async {
+                              final mutation = MutationOptions(
+                                document: gql(submitMutation),
+                                variables: {'index': idx},
+                              );
+                              final result = await client.mutate(mutation);
+                              setState(() {
+                                status = result.hasException
+                                    ? "Error: ${result.exception}"
+                                    : "Submitted: $opt";
+                              });
+                            },
+                            child: Text(opt, style: TextStyle(fontSize: 20)),
                           ),
                         );
                       }).toList(),
-                    ] else if (roundActive) ...[
+
+                    // Status Messages
+                    if (question.isEmpty && roundActive)
                       Center(child: Text('Round active — waiting for question...', style: TextStyle(color: Colors.yellow))),
-                    ] else ...[
+                    if (question.isEmpty && !roundActive)
                       Center(child: Text('Start the round to play!', style: TextStyle(color: Colors.orange))),
-                    ],
 
                     SizedBox(height: 20),
 
-                    // Start Round Button
+                    // Start Round with Bet
                     if (!roundActive)
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orange,
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                        ),
+                      ElevatedButton.icon(
+                        icon: Icon(Icons.play_arrow),
+                        label: Text('Start Round (Bet 100 tokens)'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
                         onPressed: () async {
-                          final mutation = MutationOptions(document: gql(startMutation));
+                          final mutation = MutationOptions(
+                            document: gql(startWithBetMutation),
+                            variables: {'bet': 100},
+                          );
                           final result = await client.mutate(mutation);
                           setState(() {
-                            if (result.hasException) {
-                              status = "Error: ${result.exception}";
-                            } else {
-                              status = "Round started!";
-                            }
+                            status = result.hasException
+                                ? "Error: ${result.exception}"
+                                : "Bet placed! Round started!";
                           });
                         },
-                        child: Text('Start Round', style: TextStyle(fontSize: 18)),
+                      ),
+
+                    SizedBox(height: 20),
+
+                    // End Round (when all answered)
+                    if (answers >= players && roundActive)
+                      ElevatedButton.icon(
+                        icon: Icon(Icons.check_circle),
+                        label: Text('End Round & Resolve'),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                        onPressed: () async {
+                          final mutation = MutationOptions(document: gql(endRoundMutation));
+                          final result = await client.mutate(mutation);
+                          setState(() {
+                            status = result.hasException
+                                ? "Error ending round"
+                                : "Round ended! Winners paid.";
+                          });
+                        },
                       ),
                   ],
                 );
