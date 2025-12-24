@@ -1,0 +1,13 @@
+[package]
+name = "trivia-battle-abi"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "trivia_battle_abi"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+linera-sdk = { workspace = true }
+serde = { workspace = true }
+async-graphql = { workspace = true }
