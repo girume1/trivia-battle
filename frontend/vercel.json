@@ -1,22 +1,16 @@
 {
-"name": "trivia-battle-frontend",
-"version": "1.0.0",
-"private": true,
-"description": "Flutter web frontend for Trivia Battle",
-"scripts": {
-"build": "flutter build web --release",
-"start": "flutter run -d chrome --web-port=8081",
-"pub-get": "flutter pub get",
-"clean": "flutter clean"
-},
-"dependencies": {
-"graphql_flutter": "^5.2.0",
-"flutter": "any"
-},
-"devDependencies": {
-"flutter": "any"
-},
-"engines": {
-"node": ">=18.0.0"
-}
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/**",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build/web"
+      }
+    }
+  ],
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/index.html" }
+  ]
 }
