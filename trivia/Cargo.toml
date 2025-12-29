@@ -1,0 +1,23 @@
+[package]
+name = "trivia"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+linera-sdk = "0.15.8"
+async-graphql = { version = "7.0", features = ["chrono", "decimal"] }
+serde = { version = "1.0", features = ["derive"] }
+log = "0.4"
+bcs = "0.1"
+
+# Shared types
+abi = { path = "../abi" }
+
+# Bankroll app for cross-call
+bankroll = { path = "../bankroll" }
+
+[features]
+default = ["linera-sdk/wasmer"]
