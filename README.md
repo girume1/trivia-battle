@@ -1,35 +1,89 @@
 <p align="center">
   <img src="./Trivia on Linera.jpg" width="500">
 </p>
-# Trivia Battle ⚡️⛓️
+Trivia Battle - Linera Blockchain DApp
 
-Real-time multiplayer trivia game built on Linera microchains for the Linera Buildathon.
+A multiplayer trivia game built on Linera blockchain with betting, leaderboard, and admin question management.
 
-## Features
-- Create/join rooms
-- Real-time question answering
-- Multiplayer state sync
-- Bankroll-ready (future betting)
-- Flutter web frontend
+Project Structure
+trivia-battle/
+├── abi/                # Shared types (questions, leaderboard, etc.)
+├── bankroll/           # Token / betting logic
+├── trivia/             # Main game contract (rooms, gameplay)
+├── master/             # Admin contract (question bank, fees)
+├── frontend/           # Flutter web frontend
+├── Cargo.toml          # Workspace
+└── README.md           # This file
 
-## Tech Stack
-- Backend: Linera SDK (Rust + Wasm)
-- Frontend: Flutter Web + GraphQL
-- Local testing: Docker Compose
+Features
 
-## Setup & Run Locally
-1. `cargo build --target wasm32-unknown-unknown --release`
-2. `docker compose up` (backend at http://localhost:9002/graphql)
-3. In `frontend/`: `flutter pub get && flutter run -d chrome --web-port=8081`
+Create/join trivia rooms with bets
+Real-time gameplay
+Global leaderboard
+Admin question management
+Protocol fees collected to treasury
 
-## Live Demo
-Frontend: https://trivia-battle.vercel.app  
-(Backend GraphQL is local for now — for buildathon demo, deploy to Conway Testnet)
+Local Development
+Prerequisites
 
-## Buildathon Submission
-Wave: [5]  
-Category: Games  
-Contract: Functional Linera contract with operations for rooms/questions/answers  
-Demo: Running on Conway Testnet (link coming soon)
+Rust (stable)
 
-Made with ❤️ for Linera Buildathon 2025
+Linera CLI (```cargo install linera-cli```)
+Flutter (for frontend)
+
+Build All Contracts
+
+cargo build --release --workspace
+
+Run Local Network
+```
+linera net up --with-faucet
+```
+Keep this running.
+
+Publish Apps (in order)
+```
+# In master folder
+linera publish-and-create target/wasm32-unknown-unknown/release/master.wasm
+
+# In trivia folder (use master app ID as parameter)
+linera publish-and-create target/wasm32-unknown-unknown/release/trivia.wasm --parameters "<master_app_id>"
+
+# In bankroll folder
+linera publish-and-create target/wasm32-unknown-unknown/release/bankroll.wasm
+```
+
+Run Frontend
+```
+cd frontend
+flutter run -d chrome
+```
+Open http://localhost:8080 (or port shown)
+
+Architecture
+master - Central question bank + treasury
+trivia - Game rooms and gameplay
+bankroll - Token handling for bets
+abi - Shared types between contracts
+
+Commands
+```
+# Build all
+cargo build --release --workspace
+
+# Clean
+cargo clean
+
+# Format
+cargo fmt --all
+```
+
+Future Ideas
+
+Daily bonuses
+NFT rewards
+Tournaments
+Mobile app
+
+Happy battling! 🚀💰⚡
+Built with ❤️ on Linera blockchain
