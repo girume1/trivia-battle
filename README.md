@@ -1,4 +1,4 @@
-<img src="./Trivia on Linera.jpg" width="200">
+<img src="./Trivia on Linera.jpg" width="500">
 # Trivia Battle ⚡️⛓️
 
 Real-time multiplayer trivia game built on Linera microchains for the Linera Buildathon.
