@@ -1,0 +1,23 @@
+[package]
+name = "master"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Updated to include views and graphql
+linera-sdk = "0.15.8"
+linera-views = "0.15.8"
+async-graphql = "7.0.0"
+async-trait = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+anyhow = "1.0"
+
+# Shared types
+abi = { path = "../abi" }
+trivia = { path = "../trivia" }
+
+[features]
+default = ["linera-sdk/wasmer"]
