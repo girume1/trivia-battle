@@ -1,0 +1,18 @@
+# Rust build artifacts
+/target/
+debug/
+release/
+
+# Linera temporary data
+*.json
+*.wallet
+*.storage
+.linera-bin/
+
+# Environment and sensitive files
+.env
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
