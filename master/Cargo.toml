@@ -7,15 +7,15 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# Updated to include views and graphql
+# Core Linera SDK (This handles async-graphql internally)
 linera-sdk = "0.15.8"
 linera-views = "0.15.8"
-async-graphql = "7.0.0"
 async-trait = "0.1"
+async-graphql = "7.0.17"
 serde = { version = "1.0", features = ["derive"] }
-anyhow = "1.0"
+bcs = "0.1"
 
-# Shared types
+# Shared logic from your project
 abi = { path = "../abi" }
 trivia = { path = "../trivia" }
 
